@@ -1,0 +1,1 @@
+console.log('Starting TypeScript-Email-Sender service...');\n
