@@ -4,26 +4,35 @@ import { z } from 'zod';
 const app = express();
 app.use(express.json());
 
-const payloadSchema = z.object({
-  data: z.record(z.any()),
-  timestamp: z.number().optional()
+// Transactional email sending service with template support
+
+const emailSchema = z.object({
+  to: z.string().email(),
+  subject: z.string().min(1),
+  body: z.string().min(1),
+  template: z.string().optional()
 });
 
-app.post('/api/v1/process', (req, res) => {
+const sentEmails: any[] = [];
+
+app.post('/api/v1/send', (req, res) => {
   try {
-    const validated = payloadSchema.parse(req.body);
-    res.json({ status: 'success', processed: validated.data });
+    const email = emailSchema.parse(req.body);
+    const messageId = `msg-${Date.now()}`;
+    sentEmails.push({ ...email, messageId, sentAt: new Date().toISOString() });
+    res.json({ status: 'sent', message_id: messageId, to: email.to });
   } catch (e) {
-    res.status(400).json({ error: 'Invalid payload schema' });
+    res.status(400).json({ error: 'Invalid email payload' });
   }
 });
 
+
 app.get('/health', (req, res) => {
-  res.json({ status: 'healthy', version: '3.0.0' });
+  res.json({ status: 'healthy', service: 'TypeScript-Email-Sender', version: '3.0.0' });
 });
 
 if (require.main === module) {
-  app.listen(8080, () => console.log('TypeScript-Email-Sender running on port 8080'));
+  app.listen(8080, () => console.log('TypeScript-Email-Sender running on :8080'));
 }
 
 export default app;
